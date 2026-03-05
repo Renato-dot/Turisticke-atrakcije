@@ -1,1 +1,2 @@
-# Turisticke-atrakcije
+Valentino Denona
+Niko Gospić
