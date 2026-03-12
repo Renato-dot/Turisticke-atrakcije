@@ -1,126 +1,169 @@
 <template>
   <q-layout view="lHh Lpr lFf">
-    <q-header elevated>
+
+    <!-- HEADER -->
+    <q-header elevated class="bg-primary text-white">
       <q-toolbar>
-        <q-btn flat dense round icon="menu" aria-label="Menu" @click="toggleLeftDrawer" />
-        <q-toolbar-title>
-          <div class="text-h6"><b>Turističke atrakcije</b></div>
+
+        <q-btn
+          flat
+          dense
+          round
+          icon="menu"
+          @click="toggleLeftDrawer"
+        />
+
+        <q-toolbar-title class="row items-center">
+          <q-icon name="travel_explore" size="28px" class="q-mr-sm" />
+          <span class="text-weight-bold">
+            Turističke atrakcije
+          </span>
         </q-toolbar-title>
-        <q-toolbar-title v-if="tokenExists">
-          <div class="text-h6"><b>Prijavljeni ste kao:</b>{{ userRole }}</div>
-        </q-toolbar-title>
-        <q-btn flat icon="logout" label="ODJAVA" v-if="tokenExists" @click="clearLocalStorage" />
+
+        <!-- USER INFO -->
+        <div v-if="tokenExists" class="row items-center q-gutter-sm">
+          <q-icon name="person"/>
+          <span>{{ userRole }}</span>
+
+          <q-btn
+            flat
+            dense
+            icon="logout"
+            label="Odjava"
+            @click="clearLocalStorage"
+          />
+        </div>
+
       </q-toolbar>
     </q-header>
 
-    <q-drawer v-model="leftDrawerOpen" bordered>
+    <!-- DRAWER -->
+    <q-drawer
+      v-model="leftDrawerOpen"
+      bordered
+      show-if-above
+      class="bg-grey-2"
+    >
+
       <q-list>
-        <q-item-label header>Izbornik</q-item-label>
-        <EssentialLink v-for="link in essentialLinks" :key="link.title" v-bind="link" />
+
+        <q-item-label header class="text-grey-8">
+          Navigacija
+        </q-item-label>
+
+        <EssentialLink
+          v-for="link in essentialLinks"
+          :key="link.title"
+          v-bind="link"
+        />
+
       </q-list>
+
     </q-drawer>
 
-    <q-page-container >
+    <!-- PAGE CONTENT -->
+    <q-page-container class="bg-grey-1">
       <router-view />
     </q-page-container>
+
   </q-layout>
 </template>
 
 <script>
-import { defineComponent, ref, onMounted, computed } from "vue";
-import EssentialLink from "components/EssentialLink.vue";
-import { jwtDecode } from 'jwt-decode';
+import { defineComponent, ref, onMounted, computed } from "vue"
+import EssentialLink from "components/EssentialLink.vue"
+import { jwtDecode } from "jwt-decode"
 
 const linksList = [
   {
     title: "Prijava",
     icon: "login",
-    link: "auth",
-    target: "_self",
+    link: "/auth",
     requiresAuth: false,
-    hideOnAuth: true,  
+    hideOnAuth: true,
   },
   {
     title: "Sve atrakcije",
-    caption: "popis svih atrakcija",
-    icon: "favorite",
+    icon: "place",
     link: "/",
-    target: "_self",
     requiresAuth: false,
-    hideOnAuth: false, 
+    hideOnAuth: false,
   },
   {
     title: "Moje atrakcije",
-    caption: "popis mojih atrakcija",
     icon: "favorite",
     link: "/index",
-    target: "_self",
     requiresAuth: true,
     hideOnAuth: false,
   },
   {
     title: "Unos atrakcija",
-    caption: "unos novih atrakcija",
-    icon: "swap_horizontal_circle",
-    link: "unos",
-    target: "_self",
+    icon: "add_location",
+    link: "/unos",
     requiresAuth: true,
     hideOnAuth: false,
   },
-];
+]
 
 export default defineComponent({
   name: "MainLayout",
+
   components: {
-    EssentialLink,
+    EssentialLink
   },
+
   setup() {
-    const leftDrawerOpen = ref(false);
-    const userRole = ref("");
-    const tokenExists = ref(false);
+
+    const leftDrawerOpen = ref(false)
+    const userRole = ref("")
+    const tokenExists = ref(false)
+
+    function toggleLeftDrawer() {
+      leftDrawerOpen.value = !leftDrawerOpen.value
+    }
 
     function clearLocalStorage() {
-      localStorage.clear();
-      window.location.reload();
+      localStorage.removeItem("token")
+      window.location.href = "/"
     }
 
     function getUserRole() {
-      const token = localStorage.getItem('token');
-      tokenExists.value = !!token;
-      if (token) {
-        try {
-          const decoded = jwtDecode(token);
-          userRole.value = decoded.uloga;
-        } catch (error) {
-          console.error('Error decoding token:', error);
-          userRole.value = "Niste prijavljeni";
-        }
-      } else {
-        userRole.value = "Niste prijavljeni";
+
+      const token = localStorage.getItem("token")
+
+      tokenExists.value = !!token
+
+      if (!token) return
+
+      try {
+        const decoded = jwtDecode(token)
+        userRole.value = decoded.uloga
       }
+      catch (err) {
+        console.error(err)
+      }
+
     }
 
     const filteredLinks = computed(() => {
       return linksList.filter(link => {
-        if (link.requiresAuth && !tokenExists.value) return false;
-        if (link.hideOnAuth && tokenExists.value) return false;
-        return true;
-      });
-    });
+        if (link.requiresAuth && !tokenExists.value) return false
+        if (link.hideOnAuth && tokenExists.value) return false
+        return true
+      })
+    })
 
-    onMounted(getUserRole);
+    onMounted(getUserRole)
 
     return {
       essentialLinks: filteredLinks,
       leftDrawerOpen,
-      toggleLeftDrawer() {
-        leftDrawerOpen.value = !leftDrawerOpen.value;
-      },
+      toggleLeftDrawer,
       clearLocalStorage,
       userRole,
-      tokenExists,
-    };
-  },
-});
-</script>
+      tokenExists
+    }
 
+  }
+})
+</script>
